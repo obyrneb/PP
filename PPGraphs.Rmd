@@ -1,0 +1,220 @@
+---
+title: "Privacy Practices Notebook"
+output: html_document
+---
+---
+INSTRUCTIONS:
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Each chunk can be executed by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
+
+---
+This chunk loads the needed libraries and reads the CSV datasets into the initial dataframes we will be using.
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(forcats)
+library(ggthemes)
+library(stringr)
+library(forcats)
+library(knitr)
+library(splitstackshape)
+library(scales)
+library(zoo)
+
+```
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                      echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+```{r}
+services_dtl.df <- read.csv("datasets//services_by_client.csv", check.names = FALSE)
+
+
+colnames(services_dtl.df)[1] <- "Sector"
+
+services_dtl.df[is.na(services_dtl.df)] <- 0
+
+gather(services_dtl.df, Service, Number, -Sector)
+
+#expandRows(services_dtl.df, 'Number', drop=FALSE)
+```
+
+
+```{r echo=FALSE, fig.width=8, fig.height=6}
+
+ggsave(plot = plot1, "Services-by-Sector.pdf", height = 8, width = 8)
+services.df <- read.csv("datasets//services_by_client.csv", check.names = FALSE)
+
+colnames(services.df)[1] <- "Sector"
+
+services.df[is.na(services.df)] <- 0
+
+services.df <- services.df %>%
+  gather(Service, Number, -Sector) %>%
+  group_by(Sector) %>%
+  mutate(All = sum(Number)) %>%
+  ungroup() %>%
+  arrange(desc(All)) %>%
+  mutate(Sector = factor(Sector,unique(Sector))) %>%
+  #filter(All >= 10) %>%
+  spread(Service,Number) %>%
+  gather(Service, Number, -Sector)
+
+services.df$Number[services.df$Number == 0] <- NA
+
+textSize <- 12
+plot1.ttl <- "Number of Service by Sector"
+
+plot1 <- ggplot(services.df, aes(x = Sector ,y = Number, fill = Service)) +
+  labs(title = plot1.ttl, 
+       subtitle = "Only includes sectors having received 10 or more services since fiscal year 2013-14.",
+       caption = "Data compiled by TBS's Internal Audit and Evalution Bureau") +
+  geom_bar(stat = "identity") +
+  geom_text(vjust = -0.3, colour ="grey45", size = 4, aes(label = Number)) +
+  #geom_vline(xintercept = median(services.df$Number)) +
+  facet_grid(Service~., 
+             #switch = "both", 
+             labeller = labeller(Service = label_wrap_gen(8)),
+             space = "free_y",
+             scales = "free_y") +
+  scale_y_continuous(expand = expand_scale(add = c(0,10))) +
+  theme(plot.title = element_text(size = 16, hjust = 0, colour = "grey45"),
+          plot.subtitle = element_text(face = "plain", size = textSize-1, colour = "grey45"),
+          plot.caption = element_text(face = "italic", size = textSize-1, colour = "grey45"),
+          axis.title = element_blank(),
+          axis.text.x = element_text(angle = 90, size = textSize, colour = "grey45", inherit.blank = FALSE),
+          axis.text.y = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.ticks.y = element_blank(),
+          panel.background = element_rect(fill = "grey95"),
+          panel.grid = element_blank(),
+          panel.spacing.y = unit(2, "mm"),
+          panel.spacing.x = unit(1, "mm"),
+          strip.text.y = element_text(angle = 0, size = textSize-1, colour = "grey45", inherit.blank = FALSE),
+          strip.text.x = element_text(angle = 180, size = textSize, colour = "grey45", inherit.blank = FALSE),
+          strip.background = element_blank(),
+          legend.position = "none",
+          legend.text = element_text(size = textSize, colour = "grey45"),
+          legend.title = element_blank())
+  
+plot1
+```
+
+
+```{r echo=FALSE, fig.width=4, fig.height=8}
+work.df <- read.csv("datasets//work_by_employee.csv", check.names = FALSE)
+
+work.df[is.na(work.df)] <- 0
+colnames(work.df)[12] <- "Total Employee Hours"
+
+work.df <- work.df %>%
+  gather(Task,Hours,-Employee,-OT) %>%
+  group_by(Task) %>%
+  mutate(TotalTask = sum(Hours)) %>%
+  ungroup() %>%
+  arrange(desc(TotalTask)) %>%
+  mutate(Task = factor(Task,unique(Task))) %>%
+  mutate(Threshold = if_else(Task == "Total Employee Hours", 220, 0)) %>%
+  filter(Employee != "E")
+
+
+work.df$Threshold[work.df$Threshold == 0] <- NA
+
+textSize <- 10
+
+plot2 <- ggplot(work.df, aes(x = Employee, y = Hours, fill = Task)) +
+  geom_bar(stat = "identity") +
+  geom_hline(aes(yintercept = Threshold), colour = "grey45") +
+  #geom_text(vjust = -0.3, colour ="grey45", size = 4, aes(label = Hours)) +
+  #scale_y_continuous(expand = expand_scale(add = c(0,10))) +
+  scale_y_continuous(breaks = c(20,40,60,80,100,200)) +
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
+  facet_grid(Task~., 
+             #switch = "both", 
+             labeller = labeller(Task = label_wrap_gen(15)),
+             scales = "free_y",
+             space = "free_y") +
+  theme(
+    plot.title = element_text(size = 16, hjust = 0, colour = "grey45"),
+    plot.subtitle = element_text(face = "plain", size = textSize-1, colour = "grey45"),
+    plot.caption = element_text(face = "italic", size = textSize-1, colour = "grey45"),
+    axis.title = element_blank(),
+    axis.text.x = element_text(angle = 0, size = textSize, colour = "grey45", inherit.blank = FALSE),
+    axis.text.y = element_text(angle = 0, size = textSize-2, colour = "grey45", inherit.blank = FALSE),
+    axis.ticks.x = element_blank(),
+    axis.ticks.y = element_line(colour = "grey45"),
+    panel.background = element_rect(fill = "grey95"),
+    panel.grid = element_blank(),
+    panel.spacing.y = unit(2, "mm"),
+    panel.spacing.x = unit(1, "mm"),
+    strip.text.y = element_text(angle = 0, size = textSize, colour = "grey45", inherit.blank = FALSE),
+    strip.text.x = element_text(angle = 180, size = textSize, colour = "grey45", inherit.blank = FALSE),
+    strip.background = element_blank(),
+    legend.position = "none",
+    legend.text = element_text(size = textSize, colour = "grey45"),
+    legend.title = element_blank()
+  )
+
+ggsave("Employee Hours by Task.pdf", width = 4, height = 8)
+
+plot2
+
+```
+
+```{r echo=FALSE, fig.width=8, fig.height=6}
+PIA.df <- read.csv("datasets//PIA_timelines.csv", check.names = FALSE)
+
+PIA.df$Start <- as.Date(PIA.df$Start)
+PIA.df$End <- as.Date(PIA.df$End)
+PIA.df$Completed <- as.Date(PIA.df$Completed)
+
+PIA.df <- mutate(PIA.df, 
+                 duration = paste0(as.character(
+                   round(12 * as.numeric(as.yearmon(End) - as.yearmon(Start))),0),
+                  " months"))
+
+
+plot3 <- ggplot(PIA.df, aes(colour = Status)) +
+  labs(title = "PIA Timelines", 
+       subtitle = "Data collected on the dashed line: 2018-10-10.",
+       caption = "Data compiled by TBS's Internal Audit and Evalution Bureau") +
+  geom_segment(aes(x=Start, xend = End, 
+                     y=Name, yend=Name), 
+                 size = 1) + 
+  geom_point(stat = "identity", aes(x=Start, y=Name)) +
+  geom_point(stat = "identity", aes(x=Completed, y=Name)) +
+  geom_vline(xintercept = as.Date("2018-10-10"), linetype = 2, colour = "grey45") +
+  geom_text(aes(x=Start, y=Name, label = duration), vjust =  1.5, hjust = 0, size = 3) +
+  scale_y_discrete(labels = function(x) str_wrap(x, width = 60)) +
+  scale_x_date(breaks = "1 year", minor_breaks = "3 months", date_labels = "%Y") +
+  facet_grid(Sector~., scales = "free_y", space = "free_y") +
+  theme(
+    plot.title = element_text(size = 16, hjust = 0, colour = "grey45"),
+    plot.subtitle = element_text(face = "plain", size = textSize-1, colour = "grey45"),
+    plot.caption = element_text(face = "italic", size = textSize-1, colour = "grey45"),
+    axis.title = element_blank(),
+    axis.text.x = element_text(angle = 0, size = textSize, colour = "grey45", inherit.blank = FALSE),
+    axis.text.y = element_text(angle = 0, size = textSize-2, colour = "grey45", inherit.blank = FALSE),
+    axis.ticks.x = element_blank(),
+    axis.ticks.y = element_line(colour = "grey45"),
+    panel.background = element_rect(fill = "grey95"),
+    #panel.grid = element_blank(),
+    panel.spacing.y = unit(2, "mm"),
+    panel.spacing.x = unit(1, "mm"),
+    strip.text.y = element_text(angle = 0, size = textSize, colour = "grey45", inherit.blank = FALSE),
+    strip.text.x = element_text(angle = 180, size = textSize, colour = "grey45", inherit.blank = FALSE),
+    strip.background = element_blank(),
+    legend.position = "bottom",
+    legend.text = element_text(size = textSize, colour = "grey45"),
+    legend.title = element_blank()
+    )
+
+plot3
+```
+
