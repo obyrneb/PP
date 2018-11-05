@@ -27,11 +27,6 @@ library(zoo)
 
 ```
 
-```{r global_options, include=FALSE}
-knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
-                      echo=FALSE, warning=FALSE, message=FALSE)
-```
-
 ```{r}
 services2.df <- read.csv("datasets//services_by_client.csv", check.names = FALSE)
 
@@ -84,7 +79,7 @@ plot4
 ```
 
 
-```{r echo=FALSE, fig.width=4, fig.height=3}
+```{r echo=FALSE, fig.width=7, fig.height=6}
 
 services.df <- read.csv("datasets//services_by_client.csv", check.names = FALSE)
 
@@ -99,17 +94,20 @@ services.df <- services.df %>%
   ungroup() %>%
   arrange(desc(All)) %>%
   mutate(Sector = factor(Sector,unique(Sector))) %>%
-  #filter(All >= 10) %>%
   spread(Service,Number) %>%
-  gather(Service, Number, -Sector)
+  gather(Service, Number, -Sector) %>%
+  group_by(Service) %>%
+  mutate(ServiceTotal = sum(Number)) %>%
+  ungroup() %>%
+  arrange(desc(ServiceTotal)) %>%
+  mutate(Service= factor(Service,unique(Service)))
 
 services.df$Number[services.df$Number == 0] <- NA
 
 textSize <- 12
-plot1.ttl <- "Number of Services by Sector"
 
 plot1 <- ggplot(services.df, aes(x = Sector ,y = Number, fill = Service)) +
-  labs(title = plot1.ttl#, 
+  labs(title = "Privacy Activities by Sector or Branch"#, 
        #subtitle = "Only includes sectors having received 10 or more services since fiscal year 2013-14.",
        #caption = "Data compiled by TBS's Internal Audit and Evalution Bureau"
        ) +
@@ -123,7 +121,7 @@ plot1 <- ggplot(services.df, aes(x = Sector ,y = Number, fill = Service)) +
              scales = "free_y") +
   scale_y_continuous(expand = expand_scale(add = c(0,10))) +
   theme(plot.title = element_text(size = 16, hjust = 0, colour = "grey45"),
-          plot.subtitle = element_text(face = "plain", size = textSize, colour = "grey45"),
+          plot.subtitle = element_text(face = "plain", size = 11, colour = "grey45"),
           plot.caption = element_text(face = "italic", size = textSize, colour = "grey45"),
           axis.title = element_blank(),
           axis.text.x = element_text(angle = 90, size = textSize, colour = "grey45", inherit.blank = FALSE),
@@ -147,7 +145,7 @@ plot1
 ```
 
 
-```{r echo=FALSE, fig.width=2, fig.height=4}
+```{r echo=FALSE, fig.width=4.5, fig.height=8}
 work.df <- read.csv("datasets//work_by_employee.csv", check.names = FALSE)
 
 work.df[is.na(work.df)] <- 0
@@ -161,7 +159,7 @@ work.df <- work.df %>%
   arrange(desc(TotalTask)) %>%
   mutate(Task = factor(Task,unique(Task))) %>%
   mutate(Threshold = if_else(Task == "Total Employee Work Days", 220, 0)) %>%
-  filter(Employee != "E")
+  filter(Employee != "Director")
 
 
 work.df$Threshold[work.df$Threshold == 0] <- NA
@@ -169,8 +167,8 @@ work.df$Threshold[work.df$Threshold == 0] <- NA
 textSize <- 8
 
 plot2 <- ggplot(work.df, aes(x = Employee, y = Hours, fill = Task)) +
-  labs(title = "Days Spent on Tasks by Employee", 
-       subtitle = "The dashed horizontal line represents 220 days, \n a normal annual workload."
+  labs(title = "Days Spent on Privacy Tasks"#, 
+       #subtitle = "The dashed horizontal line represents 220 days, \n a normal annual workload."
        #caption = "Data compiled by TBS's Internal Audit and Evalution Bureau"
        ) +
   geom_bar(stat = "identity") +
@@ -182,13 +180,13 @@ plot2 <- ggplot(work.df, aes(x = Employee, y = Hours, fill = Task)) +
   scale_x_discrete(labels = function(x) str_wrap(x, width = 10)) +
   facet_grid(Task~., 
              #switch = "both", 
-             labeller = labeller(Task = label_wrap_gen(15)),
+             labeller = labeller(Task = label_wrap_gen(25)),
              scales = "free_y",
              space = "free_y") +
   scale_y_continuous(breaks = c(20,40,60,80,100,200,220), expand_scale(add = c(0,10))) +
   theme(
     plot.title = element_text(size = 16, hjust = 0, colour = "grey45"),
-    plot.subtitle = element_text(face = "plain", size = textSize-1, colour = "grey45"),
+    plot.subtitle = element_text(face = "plain", size = 11, colour = "grey45"),
     plot.caption = element_text(face = "italic", size = textSize-1, colour = "grey45"),
     axis.title = element_blank(),
     axis.text.x = element_text(angle = 0, size = textSize, colour = "grey45", inherit.blank = FALSE),
@@ -214,7 +212,7 @@ plot2
 
 ```
 
-```{r echo=FALSE, fig.width=4, fig.height=2.5}
+```{r echo=FALSE, fig.width=8, fig.height=5}
 PIA.df <- read.csv("datasets//PIA_timelines.csv", check.names = FALSE)
 
 PIA.df$Start <- as.Date(PIA.df$Start)
@@ -233,8 +231,8 @@ status.ln <- c("Complete" = 1, "Ongoing" = 1)
 textSize <- 11
 
 plot3 <- ggplot(PIA.df, aes(colour = Status)) +
-  labs(title = "PIA Timelines", 
-       subtitle = "The dashed line represents when data was collected (2018-10-10)."#,
+  labs(title = "PIA Timelines"#, 
+       #subtitle = "The dashed line represents when data was collected \n(2018-10-10)."#,
        #caption = "Data compiled by TBS's Internal Audit and Evalution Bureau"
        ) +
   geom_segment(aes(x=Start, xend = End, y=Name, yend=Name, linetype = Status), size = 1) + 
@@ -253,7 +251,7 @@ plot3 <- ggplot(PIA.df, aes(colour = Status)) +
   facet_grid(Sector~., scales = "free_y", space = "free_y") +
   theme(
     plot.title = element_text(size = 16, hjust = 0, colour = "grey45"),
-    plot.subtitle = element_text(face = "plain", size = textSize-1, colour = "grey45"),
+    plot.subtitle = element_text(face = "plain", size = 11, colour = "grey45"),
     plot.caption = element_text(face = "italic", size = textSize-1, colour = "grey45"),
     axis.title = element_blank(),
     axis.text.x = element_text(angle = 0, size = textSize, colour = "grey45", 
