@@ -1,5 +1,5 @@
 ---
-title: "Privacy Practices Notebook"
+title: "R Notebook"
 output: html_document
 ---
 ---
@@ -12,7 +12,7 @@ Each chunk can be executed by clicking the *Run* button within the chunk or by p
 ---
 This chunk loads the needed libraries and reads the CSV datasets into the initial dataframes we will be using.
 
-```{r}
+```{r, echo = FALSE}
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -20,7 +20,6 @@ library(forcats)
 library(ggthemes)
 library(stringr)
 library(forcats)
-library(knitr)
 library(splitstackshape)
 library(scales)
 library(zoo)
@@ -35,7 +34,11 @@ colnames(services2.df)[1] <- "Sector"
 
 services2.df <- services2.df %>%
   gather(Service, Number, -Sector) %>%
-  expandRows("Number", drop=FALSE)
+  expandRows("Number", drop=FALSE) %>%
+  arrange(desc(Number)) %>%
+  mutate(Service = factor(Service,unique(Service))) %>%
+  mutate(Sector = factor(Sector,unique(Sector)))
+  
 
 textSize <- 12
 
@@ -79,7 +82,7 @@ plot4
 ```
 
 
-```{r echo=FALSE, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=6}
 
 services.df <- read.csv("datasets//services_by_client.csv", check.names = FALSE)
 
@@ -139,13 +142,13 @@ plot1 <- ggplot(services.df, aes(x = Sector ,y = Number, fill = Service)) +
           legend.text = element_text(size = textSize, colour = "grey45"),
           legend.title = element_blank())
 
-#ggsave(plot = plot1, "Services-by-Sector.pdf", width = 8, height = 8)
+ggsave(plot = plot1, "Privacy-Activities-by-Sector.svg", width = 8, height = 8)
   
 plot1
 ```
 
 
-```{r echo=FALSE, fig.width=4.5, fig.height=8}
+```{r, fig.width=4.5, fig.height=8}
 work.df <- read.csv("datasets//work_by_employee.csv", check.names = FALSE)
 
 work.df[is.na(work.df)] <- 0
@@ -206,13 +209,13 @@ plot2 <- ggplot(work.df, aes(x = Employee, y = Hours, fill = Task)) +
     legend.title = element_blank()
   )
 
-#ggsave("Employee Hours by Task.pdf", width = 4, height = 8)
+ggsave(plot = plot2, "Days-Spent-on-Privacy-Taks.svg", width = 4, height = 8)
 
 plot2
 
 ```
 
-```{r echo=FALSE, fig.width=8, fig.height=5}
+```{r, fig.width=8, fig.height=5}
 PIA.df <- read.csv("datasets//PIA_timelines.csv", check.names = FALSE)
 
 PIA.df$Start <- as.Date(PIA.df$Start)
@@ -273,6 +276,9 @@ plot3 <- ggplot(PIA.df, aes(colour = Status)) +
     legend.text = element_text(size = textSize, colour = "grey45"),
     legend.title = element_blank()
     )
+
+ggsave(plot = plot3, "PIA-timelines.svg", width = 4, height = 8)
+
 
 plot3
 ```
