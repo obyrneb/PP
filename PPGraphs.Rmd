@@ -215,7 +215,7 @@ plot2
 
 ```
 
-```{r, fig.width=8, fig.height=5}
+```{r, fig.width=10, fig.height=5}
 PIA.df <- read.csv("datasets//PIA_timelines.csv", check.names = FALSE)
 
 PIA.df$Start <- as.Date(PIA.df$Start)
@@ -225,8 +225,8 @@ PIA.df$Completed <- as.Date(PIA.df$Completed)
 PIA.df <- PIA.df %>%
   mutate(duration = 
            paste0(as.character(round(
-             12 * as.numeric(as.yearmon(End) - as.yearmon(Start))),0)," months")) %>%
-  filter(Type == "PIA")
+             12 * as.numeric(as.yearmon(End) - as.yearmon(Start))),0)," months")) #%>%
+  #filter(Type == "PIA")
 
 status.clr <- c("Complete" = "#00BFC4", "Ongoing" = "#F8766D")
 status.ln <- c("Complete" = 1, "Ongoing" = 1)
@@ -251,7 +251,7 @@ plot3 <- ggplot(PIA.df, aes(colour = Status)) +
                date_labels = "%Y") +
   scale_colour_manual(values = status.clr) +
   scale_linetype_manual(values = status.ln) +
-  facet_grid(Sector~., scales = "free_y", space = "free_y") +
+  facet_grid(Sector + Type ~ ., scales = "free_y", space = "free_y") +
   theme(
     plot.title = element_text(size = 16, hjust = 0, colour = "grey45"),
     plot.subtitle = element_text(face = "plain", size = 11, colour = "grey45"),
